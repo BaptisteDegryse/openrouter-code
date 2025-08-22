@@ -110,6 +110,7 @@ IMPORTANT TOOL USAGE RULES:
   - Required parameters are listed in the "required" array
   - Text matching in edit_file must be EXACT (including whitespace)
   - NEVER prefix tool names with "repo_browser."
+  - Try to use as much tools in a single request as possible. Parallelize tool calls. (like all reads, then all edits)
 
 COMMAND EXECUTION SAFETY:
   - Only use execute_command for commands that COMPLETE QUICKLY (tests, builds, short scripts)
@@ -260,6 +261,23 @@ When asked about your identity, you should identify yourself as a coding assista
           return;
         }
         
+        // Print iteration progress for debugging max-iteration issues
+        console.log(`[agent] iteration ${iteration + 1}/${maxIterations}`);
+        debugLog('Iteration progress', { iteration: iteration + 1, maxIterations });
+
+        // Prepare per-iteration summary info that we'll fill in and log
+        const iterationSummary: any = {
+          iterationNumber: iteration + 1,
+          action: 'unknown', // 'tool_calls' | 'final' | 'error' | 'interrupted'
+          finishReason: undefined as undefined | string,
+          hasToolCalls: false,
+          toolCalls: [] as Array<{ name: string }>,
+          usage: undefined as undefined | { prompt_tokens: number; completion_tokens: number; total_tokens: number },
+          thinkingPreview: undefined as undefined | string,
+          finalContentPreview: undefined as undefined | string,
+          error: undefined as undefined | { message: string }
+        };
+
         try {
           // Check client exists
           if (!this.client) {
@@ -277,7 +295,7 @@ When asked about your identity, you should identify yourself as a coding assista
             tools: ALL_TOOL_SCHEMAS,
             tool_choice: 'auto' as const,
             temperature: this.temperature,
-            max_tokens: 8000,
+            max_tokens: 16000,
             stream: false as const
           };
           
@@ -297,7 +315,7 @@ When asked about your identity, you should identify yourself as a coding assista
             tools: ALL_TOOL_SCHEMAS,
             tool_choice: 'auto',
             temperature: this.temperature,
-            max_tokens: 8000,
+            max_tokens: 16000,
             stream: false
           }, {
             signal: this.currentAbortController.signal
@@ -312,6 +330,14 @@ When asked about your identity, you should identify yourself as a coding assista
           
           // Extract reasoning if present
           const reasoning = (message as any).reasoning;
+          iterationSummary.finishReason = response.choices[0].finish_reason as string;
+          if (response.usage) {
+            iterationSummary.usage = {
+              prompt_tokens: response.usage.prompt_tokens,
+              completion_tokens: response.usage.completion_tokens,
+              total_tokens: response.usage.total_tokens
+            };
+          }
           
           // Pass usage data to callback if available
           if (response.usage && this.onApiUsage) {
@@ -331,65 +357,93 @@ When asked about your identity, you should identify yourself as a coding assista
 
           // Handle tool calls if present
           if (message.tool_calls) {
+            iterationSummary.hasToolCalls = true;
             // Show thinking text or reasoning if present
             if (message.content || reasoning) {
               if (this.onThinkingText) {
-                this.onThinkingText(message.content || '', reasoning);
+                this.onThinkingText((message.content || '').trim(), reasoning?.trim());
               }
+              const previewSource = (message.content || reasoning || '').toString();
+              iterationSummary.thinkingPreview = previewSource.substring(0, 160);
             }
 
             // Add assistant message to history
             const assistantMsg: Message = {
               role: 'assistant',
-              content: message.content || ''
+              content: (message.content || '').trim()
             };
             assistantMsg.tool_calls = message.tool_calls;
             this.messages.push(assistantMsg);
 
-            // Execute tool calls
-            for (const toolCall of message.tool_calls) {
+            // Execute tool calls in parallel
+            const toolExecutionPromises = message.tool_calls.map(async (toolCall) => {
               // Check for interruption before each tool execution
               if (this.isInterrupted) {
                 debugLog('Tool execution interrupted by user');
                 this.currentAbortController = null;
-                return;
+                return { interrupted: true, toolCall };
               }
               
               const result = await this.executeToolCall(toolCall);
+              const toolName = 'function' in toolCall ? toolCall.function.name : 'unknown';
+              
+              return { interrupted: false, result, toolCall, toolName };
+            });
 
+            const toolResults = await Promise.all(toolExecutionPromises);
+
+            // Process results and check for interruptions/rejections
+            for (const toolResult of toolResults) {
+              if (toolResult.interrupted) {
+                iterationSummary.action = 'interrupted';
+                logIterationSummary(iterationSummary);
+                return;
+              }
+
+              const { result, toolCall, toolName } = toolResult;
+              if (!result) continue;
+
+              iterationSummary.toolCalls.push({ name: toolName });
+
+              debugLog('Tool call result:', result);
               // Add tool result to conversation (including rejected ones)
+              const content = result.success ? result.content : { error: result.error, message: result.message };
               this.messages.push({
                 role: 'tool',
                 tool_call_id: toolCall.id,
-                content: JSON.stringify(result)
+                content: JSON.stringify(content === undefined ? null : content)
               });
 
               // Check if user rejected the tool, if so, stop processing
               if (result.userRejected) {
                 // Add a note to the conversation that the user rejected the tool
-                const toolName = 'function' in toolCall ? toolCall.function.name : 'unknown';
                 this.messages.push({
                   role: 'system',
                   content: `The user rejected the ${toolName} tool execution. The response has been terminated. Please wait for the user's next instruction.`
                 });
+                iterationSummary.action = 'interrupted';
+                logIterationSummary(iterationSummary);
                 return;
               }
             }
 
             // Continue loop to get model response to tool results
+            iterationSummary.action = 'tool_calls';
+            logIterationSummary(iterationSummary);
             iteration++;
             continue;
           }
 
           // No tool calls, this is the final response
-          const content = message.content || '';
+          const content = (message.content || '').trim();
           debugLog('Final response - no tool calls detected');
           debugLog('Final content length:', content.length);
           debugLog('Final content preview:', content.substring(0, 200));
+          iterationSummary.finalContentPreview = content.substring(0, 200);
           
           if (this.onFinalMessage) {
             debugLog('Calling onFinalMessage callback');
-            this.onFinalMessage(content, reasoning);
+            this.onFinalMessage(content, reasoning?.trim());
           } else {
             debugLog('No onFinalMessage callback set');
           }
@@ -402,6 +456,8 @@ When asked about your identity, you should identify yourself as a coding assista
 
           debugLog('Final response added to conversation history, exiting chat loop');
           this.currentAbortController = null; // Clear abort controller
+          iterationSummary.action = 'final';
+          logIterationSummary(iterationSummary);
           return; // Successfully completed, exit both loops
 
         } catch (error) {
@@ -423,6 +479,7 @@ When asked about your identity, you should identify yourself as a coding assista
             message: error instanceof Error ? error.message : String(error),
             stack: error instanceof Error ? error.stack : 'No stack available'
           });
+          iterationSummary.error = { message: error instanceof Error ? error.message : String(error) };
           
           // Add API error as context message instead of terminating chat
           let errorMessage = 'Unknown error occurred';
@@ -450,6 +507,8 @@ When asked about your identity, you should identify yourself as a coding assista
           
           // For 401 errors (invalid API key), don't retry - terminate immediately
           if (is401Error) {
+            iterationSummary.action = 'error';
+            logIterationSummary(iterationSummary);
             throw new Error(`${errorMessage}. Please check your API key and use /login to set a valid key.`);
           }
           
@@ -460,6 +519,8 @@ When asked about your identity, you should identify yourself as a coding assista
           });
           
           // Continue conversation loop to let model attempt recovery
+          iterationSummary.action = 'error';
+          logIterationSummary(iterationSummary);
           iteration++;
           continue;
         }
@@ -500,6 +561,7 @@ When asked about your identity, you should identify yourself as a coding assista
       // Handle truncated tool calls
       let toolArgs: any;
       try {
+        toolCall.function.arguments = toolCall.function.arguments.replace(/<｜tool[▁\s]*call[▁\s]*end｜>/g, '');
         toolArgs = JSON.parse(toolCall.function.arguments);
       } catch (error) {
         return {
@@ -630,4 +692,29 @@ function generateCurlCommand(apiKey: string, requestBody: any, requestCount: num
   -d @${jsonFileName}`;
   
   return curlCmd;
+}
+
+function logIterationSummary(summary: {
+  iterationNumber: number;
+  action: 'unknown' | 'tool_calls' | 'final' | 'error' | 'interrupted';
+  finishReason?: string;
+  hasToolCalls: boolean;
+  toolCalls: Array<{ name: string }>;
+  usage?: { prompt_tokens: number; completion_tokens: number; total_tokens: number };
+  thinkingPreview?: string;
+  finalContentPreview?: string;
+  error?: { message: string };
+}) {
+  const concise = {
+    iteration: summary.iterationNumber,
+    action: summary.action,
+    finishReason: summary.finishReason,
+    hasToolCalls: summary.hasToolCalls,
+    toolCalls: summary.toolCalls.map(t => t.name),
+    usage: summary.usage,
+    preview: summary.finalContentPreview ?? summary.thinkingPreview,
+    error: summary.error?.message,
+  };
+  console.log(`[agent] summary`, concise);
+  debugLog('Iteration summary', concise);
 }
