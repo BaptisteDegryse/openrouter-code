@@ -1,15 +1,15 @@
 <h2 align="center">
  <br>
- <img src="docs/thumbnail.png" alt="Groq Code CLI" width="400">
+ <img src="docs/thumbnail.png" alt="OpenRouter Code CLI" width="400">
  <br>
  <br>
- Groq Code CLI: A highly customizable, lightweight, and open-source coding CLI powered by Groq for instant iteration.
+ OpenRouter Code CLI: Access any LLM model via OpenRouter in a customizable coding CLI
  <br>
 </h2>
 
 <p align="center">
- <a href="https://github.com/build-with-groq/groq-code-cli/stargazers"><img src="https://img.shields.io/github/stars/build-with-groq/groq-code-cli"></a>
- <a href="https://github.com/build-with-groq/groq-code-cli/blob/main/LICENSE">
+ <a href="https://github.com/openrouter-code-cli/openrouter-code-cli/stargazers"><img src="https://img.shields.io/github/stars/openrouter-code-cli/openrouter-code-cli"></a>
+ <a href="https://github.com/openrouter-code-cli/openrouter-code-cli/blob/main/LICENSE">
  <img src="https://img.shields.io/badge/License-MIT-green.svg">
  </a>
 </p>
@@ -29,9 +29,11 @@ https://github.com/user-attachments/assets/5902fd07-1882-4ee7-825b-50d627f8c96a
 
 # Overview
 
-Coding CLIs are everywhere. The Groq Code CLI is different. It is a blueprint, a building block, for developers looking to leverage, customize, and extend a CLI to be entirely their own. Leading open-source CLIs are all fantastic, inspiring for the open-source community, and hugely rich in features. However, that's just it: they are *gigantic*. Feature-rich: yes, but local development with such a large and interwoven codebase is unfriendly and overwhelming. **This is a project for developers looking to dive in.**
+The OpenRouter Code CLI gives you access to **any LLM model available on OpenRouter**, including Claude 3.5 Sonnet, GPT-4, Llama 3, Gemini, and many more. This is a customizable, lightweight, and open-source coding CLI that serves as a blueprint for developers looking to leverage, customize, and extend a CLI to be entirely their own.
 
-Groq Code CLI is your chance to make a CLI truly your own. Equipped with all of the features, tools, commands, and UI/UX that’s familiar to your current favorite CLI, we make it simple to add new features you’ve always wanted. By massively cutting down on bloat and code mass without compromising on quality, you can jump into modifying this CLI however you see fit. By leveraging models on Groq, you can iterate even faster (`/models` to see available models). Simply activate the CLI by typing `groq` in your terminal. Use Groq Code CLI in any directory just like you would with any other coding CLI. Use it in this directory to have it build and customize itself!
+Unlike other coding CLIs that are locked to a single provider, OpenRouter Code CLI lets you choose the perfect model for each task. Want Claude's reasoning? GPT-4's creativity? Or the speed of smaller models? Simply use `/model` to switch between any available model on OpenRouter.
+
+OpenRouter Code CLI is your chance to make a CLI truly your own while having access to the best AI models available. Equipped with all of the features, tools, commands, and UI/UX that's familiar, we make it simple to add new features you've always wanted. Simply activate the CLI by typing `openrouter` in your terminal. Use it in any directory just like you would with any other coding CLI.
 
 A few customization ideas to get started:
 - New slash commands (e.g. /mcp, /deadcode, /complexity, etc.)
@@ -45,11 +47,11 @@ A few customization ideas to get started:
 
 ### For Development (Recommended)
 ```bash
-git clone https://github.com/build-with-groq/groq-code-cli.git
-cd groq-code-cli
+git clone https://github.com/openrouter-code-cli/openrouter-code-cli.git
+cd openrouter-code-cli
 npm install
 npm run build
-npm link        # Enables the `groq` command in any directory
+npm link        # Enables the `openrouter` command in any directory
 ```
 
 ```bash
@@ -59,19 +61,19 @@ npm run dev
 
 ### To Try it Out
 ```bash
-npx groq-code-cli@latest
+npx openrouter-code-cli@latest
 ```
 
 ## Usage
 ```bash
 # Start chat session
-groq
+openrouter
 ```
 
 ### Command Line Options
 
 ```bash
-groq [options]
+openrouter [options]
 
 Options:
   -t, --temperature <temp>      Temperature for generation (default: 1)
@@ -86,27 +88,35 @@ Options:
 On first use, start a chat:
 
 ```bash
-groq
+openrouter
 ```
 
 And type the `/login` command:
 
 ![Login](docs/login.png)
->Get your API key from the <strong>Groq Console</strong> [here](https://console.groq.com/keys)
+>Get your API key from the <strong>OpenRouter Console</strong> [here](https://openrouter.ai/keys)
 
-This creates a .groq/ folder in your home directory that stores your API key, default model selection, and any other config you wish to add.
+This creates a .openrouter/ folder in your home directory that stores your API key, default model selection, and any other config you wish to add.
 
 You can also set your API key for your current directory via environment variable:
 ```bash
-export GROQ_API_KEY=your_api_key_here
+export OPENROUTER_API_KEY=your_api_key_here
 ```
 
 ### Available Commands
 - `/help` - Show help and available commands
-- `/login` - Login with your credentials
-- `/model` - Select your Groq model
+- `/login` - Login with your OpenRouter API key
+- `/model` - Select from any OpenRouter model (e.g., `anthropic/claude-3.5-sonnet`, `openai/gpt-4-turbo`, `meta-llama/llama-3.1-70b-instruct`)
 - `/clear` - Clear chat history and context
 - `/reasoning` - Toggle display of reasoning content in messages
+
+### Popular OpenRouter Models
+- `anthropic/claude-3.5-sonnet` - Claude 3.5 Sonnet (excellent for coding)
+- `openai/gpt-4-turbo` - GPT-4 Turbo
+- `google/gemini-pro-1.5` - Gemini Pro 1.5
+- `meta-llama/llama-3.1-70b-instruct` - Llama 3.1 70B
+- `mistralai/mistral-large` - Mistral Large
+- And many more! See full list at [openrouter.ai/models](https://openrouter.ai/models)
 
 
 ## Development
@@ -126,7 +136,7 @@ npm run dev        # Build in watch mode
 ### Project Structure
 
 ```
-groq-code-cli/
+openrouter-code-cli/
 ├── src/
 │   ├── commands/           
 │   │   ├── definitions/        # Individual command implementations
@@ -224,7 +234,7 @@ export const yourCommand: CommandDefinition = {
 2. **Register the command** in `src/commands/index.ts` by importing it and adding to the `availableCommands` array.
 
 #### Changing Start Command
-To change the start command from `groq`, change `"groq"` in `"bin"` of `package.json` to your global command of choice.
+To change the start command from `openrouter`, change `"openrouter"` in `"bin"` of `package.json` to your global command of choice.
 
 Re-run `npm run build` and `npm link`.
 
@@ -235,4 +245,6 @@ Improvements through PRs are welcome!
 
 For issues and feature requests, please open an issue on GitHub.
 
-#### Share what you create with Groq on our [socials](https://x.com/GroqInc)!
+## License
+
+MIT

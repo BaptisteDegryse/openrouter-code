@@ -3,11 +3,11 @@ import * as path from 'path';
 import * as os from 'os';
 
 interface Config {
-  groqApiKey?: string;
+  openrouterApiKey?: string;
   defaultModel?: string;
 }
 
-const CONFIG_DIR = '.groq'; // In home directory
+const CONFIG_DIR = '.openrouter'; // In home directory
 const CONFIG_FILE = 'local-settings.json';
 
 export class ConfigManager {
@@ -33,7 +33,7 @@ export class ConfigManager {
 
       const configData = fs.readFileSync(this.configPath, 'utf8');
       const config: Config = JSON.parse(configData);
-      return config.groqApiKey || null;
+      return config.openrouterApiKey || null;
     } catch (error) {
       console.warn('Failed to read config file:', error);
       return null;
@@ -50,7 +50,7 @@ export class ConfigManager {
         config = JSON.parse(configData);
       }
 
-      config.groqApiKey = apiKey;
+      config.openrouterApiKey = apiKey;
 
       fs.writeFileSync(this.configPath, JSON.stringify(config, null, 2), {
         mode: 0o600 // Read/write for owner only
@@ -68,7 +68,7 @@ export class ConfigManager {
 
       const configData = fs.readFileSync(this.configPath, 'utf8');
       const config: Config = JSON.parse(configData);
-      delete config.groqApiKey;
+      delete config.openrouterApiKey;
 
       if (Object.keys(config).length === 0) {
         fs.unlinkSync(this.configPath);

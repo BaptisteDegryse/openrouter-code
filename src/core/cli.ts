@@ -13,27 +13,17 @@ async function startChat(
   system: string | null,
   debug?: boolean
 ): Promise<void> {
-  console.log(chalk.hex('#FF4500')(`                             
-  ██████    ██████   ██████   ██████
- ███░░███░░███░░░██ ███░░███ ███░░███ 
-░███ ░███ ░███ ░░░ ░███ ░███░███ ░███ 
-░███ ░███ ░███     ░███ ░███░███ ░███ 
-░░███░███ ░███     ░░██████ ░░███░███ 
- ░░░░░███ ░░░░      ░░░░░░   ░░░░░███ 
- ██  ░███                        ░███ 
-░░██████                         ░███
- ░░░░░░                          ░░░ 
-                        ███          
-                      ░░███           
-  ██████   ██████   ███████   ██████  
- ███░░███ ███░░███ ███░░███  ███░░███ 
-░███ ░░░ ░███ ░███░███ ░███ ░███████  
-░███  ███░███ ░███░███ ░███ ░███░░░   
-░░██████ ░░██████ ░░███████ ░░██████  
- ░░░░░░   ░░░░░░   ░░░░░░░░  ░░░░░░   
+  console.log(chalk.hex('#FF4500')(`
+ ██████╗ ██████╗ ███████╗███╗   ██╗██████╗  ██████╗ ██╗   ██╗████████╗███████╗██████╗ 
+██╔═══██╗██╔══██╗██╔════╝████╗  ██║██╔══██╗██╔═══██╗██║   ██║╚══██╔══╝██╔════╝██╔══██╗
+██║   ██║██████╔╝█████╗  ██╔██╗ ██║██████╔╝██║   ██║██║   ██║   ██║   █████╗  ██████╔╝
+██║   ██║██╔═══╝ ██╔══╝  ██║╚██╗██║██╔══██╗██║   ██║██║   ██║   ██║   ██╔══╝  ██╔══██╗
+╚██████╔╝██║     ███████╗██║ ╚████║██║  ██║╚██████╔╝╚██████╔╝   ██║   ███████╗██║  ██║
+ ╚═════╝ ╚═╝     ╚══════╝╚═╝  ╚═══╝╚═╝  ╚═╝ ╚═════╝  ╚═════╝    ╚═╝   ╚══════╝╚═╝  ╚═╝
 `));
     
-  let defaultModel = 'moonshotai/kimi-k2-instruct';
+  // Default model - can be changed with /model command
+  let defaultModel = 'anthropic/claude-3.5-sonnet';
   try {
     // Create agent (API key will be checked on first message)
     const agent = await Agent.create(defaultModel, temperature, system, debug);
@@ -46,8 +36,8 @@ async function startChat(
 }
 
 program
-  .name('groq')
-  .description('Groq Code CLI')
+  .name('openrouter')
+  .description('OpenRouter Code CLI - Use any LLM via OpenRouter')
   .version('1.0.0')
   .option('-t, --temperature <temperature>', 'Temperature for generation', parseFloat, 1.0)
   .option('-s, --system <message>', 'Custom system message')

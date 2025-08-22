@@ -1,4 +1,4 @@
-import Groq from 'groq-sdk';
+import OpenAI from 'openai';
 import { executeTool } from '../tools/tools.js';
 import { validateReadBeforeEdit, getReadBeforeEditError } from '../tools/validators.js';
 import { ALL_TOOL_SCHEMAS, DANGEROUS_TOOLS, APPROVAL_REQUIRED_TOOLS } from '../tools/tool-schemas.js';
@@ -14,7 +14,7 @@ interface Message {
 }
 
 export class Agent {
-  private client: Groq | null = null;
+  private client: OpenAI | null = null;
   private messages: Message[] = [];
   private apiKey: string | null = null;
   private model: string;
@@ -78,7 +78,7 @@ export class Agent {
   }
 
   private buildDefaultSystemMessage(): string {
-    return `You are a coding assistant powered by ${this.model} on Groq. Tools are available to you. Use tools to complete tasks.
+    return `You are a coding assistant powered by ${this.model} via OpenRouter. Tools are available to you. Use tools to complete tasks.
 
 CRITICAL: For ANY implementation request (building apps, creating components, writing code), you MUST use tools to create actual files. NEVER provide text-only responses for coding tasks that require implementation.
 
@@ -127,7 +127,7 @@ Be direct and efficient.
 
 Don't generate markdown tables.
 
-When asked about your identity, you should identify yourself as a coding assistant running on the ${this.model} model via Groq.`;
+When asked about your identity, you should identify yourself as a coding assistant running on the ${this.model} model via OpenRouter.`;
   }
 
 
@@ -153,8 +153,15 @@ When asked about your identity, you should identify yourself as a coding assista
     debugLog('Setting API key in agent...');
     debugLog('API key provided:', apiKey ? `${apiKey.substring(0, 8)}...` : 'empty');
     this.apiKey = apiKey;
-    this.client = new Groq({ apiKey });
-    debugLog('Groq client initialized with provided API key');
+    this.client = new OpenAI({ 
+      apiKey,
+      baseURL: 'https://openrouter.ai/api/v1',
+      defaultHeaders: {
+        'HTTP-Referer': 'https://github.com/openrouter-code-cli',
+        'X-Title': 'OpenRouter Code CLI'
+      }
+    });
+    debugLog('OpenRouter client initialized with provided API key');
   }
 
   public saveApiKey(apiKey: string): void {
@@ -217,25 +224,25 @@ When asked about your identity, you should identify yourself as a coding assista
     
     // Check API key on first message send
     if (!this.client) {
-      debugLog('Initializing Groq client...');
+      debugLog('Initializing OpenRouter client...');
       // Try environment variable first
-      const envApiKey = process.env.GROQ_API_KEY;
+      const envApiKey = process.env.OPENROUTER_API_KEY;
       if (envApiKey) {
         debugLog('Using API key from environment variable');
         this.setApiKey(envApiKey);
       } else {
         // Try config file
-        debugLog('Environment variable GROQ_API_KEY not found, checking config file');
+        debugLog('Environment variable OPENROUTER_API_KEY not found, checking config file');
         const configApiKey = this.configManager.getApiKey();
         if (configApiKey) {
           debugLog('Using API key from config file');
           this.setApiKey(configApiKey);
         } else {
           debugLog('No API key found anywhere');
-          throw new Error('No API key available. Please use /login to set your Groq API key.');
+          throw new Error('No API key available. Please use /login to set your OpenRouter API key.');
         }
       }
-      debugLog('Groq client initialized successfully');
+      debugLog('OpenRouter client initialized successfully');
     }
 
     // Add user message
@@ -256,10 +263,10 @@ When asked about your identity, you should identify yourself as a coding assista
         try {
           // Check client exists
           if (!this.client) {
-            throw new Error('Groq client not initialized');
+            throw new Error('OpenRouter client not initialized');
           }
 
-          debugLog('Making API call to Groq with model:', this.model);
+          debugLog('Making API call to OpenRouter with model:', this.model);
           debugLog('Messages count:', this.messages.length);
           debugLog('Last few messages:', this.messages.slice(-3));
           
@@ -360,9 +367,10 @@ When asked about your identity, you should identify yourself as a coding assista
               // Check if user rejected the tool, if so, stop processing
               if (result.userRejected) {
                 // Add a note to the conversation that the user rejected the tool
+                const toolName = 'function' in toolCall ? toolCall.function.name : 'unknown';
                 this.messages.push({
                   role: 'system',
-                  content: `The user rejected the ${toolCall.function.name} tool execution. The response has been terminated. Please wait for the user's next instruction.`
+                  content: `The user rejected the ${toolName} tool execution. The response has been terminated. Please wait for the user's next instruction.`
                 });
                 return;
               }
@@ -475,6 +483,14 @@ When asked about your identity, you should identify yourself as a coding assista
 
   private async executeToolCall(toolCall: any): Promise<Record<string, any>> {
     try {
+      // Check if this is a function tool call
+      if (!('function' in toolCall)) {
+        return {
+          error: 'Invalid tool call format',
+          success: false
+        };
+      }
+
       // Strip 'repo_browser.' prefix if present (some models hallucinate this)
       let toolName = toolCall.function.name;
       if (toolName.startsWith('repo_browser.')) {
@@ -606,9 +622,11 @@ function generateCurlCommand(apiKey: string, requestBody: any, requestCount: num
   const jsonFilePath = path.join(process.cwd(), jsonFileName);
   fs.writeFileSync(jsonFilePath, JSON.stringify(requestBody, null, 2));
   
-  const curlCmd = `curl -X POST "https://api.groq.com/openai/v1/chat/completions" \\
+  const curlCmd = `curl -X POST "https://openrouter.ai/api/v1/chat/completions" \\
   -H "Authorization: Bearer ${maskedApiKey}" \\
   -H "Content-Type: application/json" \\
+  -H "HTTP-Referer: https://github.com/openrouter-code-cli" \\
+  -H "X-Title: OpenRouter Code CLI" \\
   -d @${jsonFileName}`;
   
   return curlCmd;

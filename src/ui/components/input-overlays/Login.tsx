@@ -41,12 +41,12 @@ export default function Login({ onSubmit, onCancel }: LoginProps) {
   return (
     <Box flexDirection="column" marginBottom={1}>
       <Box marginBottom={1}>
-        <Text color="cyan" bold>Login with Groq API Key</Text>
+        <Text color="cyan" bold>Login with OpenRouter API Key</Text>
       </Box>
       
       <Box marginBottom={1}>
         <Text color="gray">
-          Enter your Groq API key to continue. You can get one from <Text underline>https://console.groq.com/keys</Text>
+          Enter your OpenRouter API key to continue. You can get one from <Text underline>https://openrouter.ai/keys</Text>
         </Text>
       </Box>
 

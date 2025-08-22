@@ -19,63 +19,26 @@ export default function TokenMetrics({
   completionTokens
 }: TokenMetricsProps) {
   const [displayTime, setDisplayTime] = useState('0.0s');
-  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
   
-  const loadingMessages = ['GroqThinking', 'GroqMaxxing', 'GroqCoding'];
+  const loadingMessage = 'OpenRouterThinking';
 
-  // Update the display time every 100ms when active and not paused
+  // Update display time only when state changes, not continuously
   useEffect(() => {
-    if (!isActive || isPaused) {
+    if (!startTime) {
+      setDisplayTime('0.0s');
       return;
     }
 
-    const updateDisplay = () => {
-      if (!startTime) {
-        setDisplayTime('0.0s');
-        return;
-      }
-
-      // Calculate elapsed time minus paused time
-      const currentElapsed = Date.now() - startTime.getTime() - pausedTime;
-      setDisplayTime(`${(currentElapsed / 1000).toFixed(1)}s`);
-    };
-
-    // Update immediately, then set interval
-    updateDisplay();
-    
-    const interval = setInterval(updateDisplay, 100);
-    return () => clearInterval(interval);
-  }, [isActive, isPaused, startTime, pausedTime]);
-
-  // Reset loading message index when becoming active and not paused
-  useEffect(() => {
-    if (isActive && !isPaused) {
-      setLoadingMessageIndex(0);
-    }
-  }, [isActive, isPaused]);
-
-  // Cycle through loading messages every 2 seconds when active and not paused
-  useEffect(() => {
-    if (!isActive || isPaused) {
-      return;
-    }
-
-    const interval = setInterval(() => {
-      setLoadingMessageIndex((prevIndex) => 
-        (prevIndex + 1) % loadingMessages.length
-      );
-    }, 2000);
-
-    return () => clearInterval(interval);
-  }, [isActive, isPaused, loadingMessages.length]);
-
-  // Update display when request completes
-  useEffect(() => {
-    if (!isActive && endTime && startTime) {
+    if (!isActive && endTime) {
+      // Show final elapsed time when completed
       const finalElapsed = endTime.getTime() - startTime.getTime() - pausedTime;
       setDisplayTime(`${(finalElapsed / 1000).toFixed(1)}s`);
+    } else if (isActive && !isPaused) {
+      // Show current elapsed time when active (but don't continuously update)
+      const currentElapsed = Date.now() - startTime.getTime() - pausedTime;
+      setDisplayTime(`${(currentElapsed / 1000).toFixed(1)}s`);
     }
-  }, [isActive, endTime, startTime, pausedTime]);
+  }, [isActive, isPaused, startTime, endTime, pausedTime]);
 
   const getElapsedTime = (): string => {
     return displayTime;
@@ -83,7 +46,7 @@ export default function TokenMetrics({
 
   const getStatusText = (): string => {
     if (isPaused) return '⏸ Waiting for approval...';
-    if (isActive) return `⚡ ${loadingMessages[loadingMessageIndex]}...`;
+    if (isActive) return `⚡ ${loadingMessage}...`;
     return '';
   };
 
