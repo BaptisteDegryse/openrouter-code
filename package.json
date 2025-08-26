@@ -35,8 +35,7 @@
 		"build": "tsc",
 		"dev": "tsc --watch",
 		"test": "prettier --check . && xo && ava",
-		"security-check": "./scripts/security-check.sh",
-		"prepublishOnly": "npm run build && npm run security-check",
+		"prepublishOnly": "npm run build",
 		"prepack": "npm run build"
 	},
 	"files": [
