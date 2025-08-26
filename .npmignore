@@ -1,0 +1,28 @@
+# Source files
+src/
+tsconfig.json
+test-openrouter.js
+Bug.txt
+
+# Development
+.git/
+.github/
+*.log
+*.tsbuildinfo
+
+# Dependencies
+node_modules/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp

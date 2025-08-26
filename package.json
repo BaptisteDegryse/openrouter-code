@@ -1,7 +1,29 @@
 {
-	"name": "openrouter-code-cli",
-	"version": "0.0.0",
+	"name": "openrouter-code",
+	"version": "1.0.0",
+	"description": "A customizable, lightweight, and open-source coding CLI powered by OpenRouter - access any LLM model via OpenRouter",
 	"license": "MIT",
+	"author": "Baptiste Degryse <baptiste@chillinturtles.com>",
+	"homepage": "https://github.com/BaptisteDegryse/openrouter-code#readme",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/BaptisteDegryse/openrouter-code.git"
+	},
+	"bugs": {
+		"url": "https://github.com/BaptisteDegryse/openrouter-code/issues"
+	},
+	"keywords": [
+		"openrouter",
+		"ai",
+		"cli",
+		"coding",
+		"assistant",
+		"llm",
+		"claude",
+		"gpt",
+		"terminal",
+		"code"
+	],
 	"bin": {
 		"openrouter": "dist/core/cli.js"
 	},
@@ -12,7 +34,10 @@
 	"scripts": {
 		"build": "tsc",
 		"dev": "tsc --watch",
-		"test": "prettier --check . && xo && ava"
+		"test": "prettier --check . && xo && ava",
+		"security-check": "./scripts/security-check.sh",
+		"prepublishOnly": "npm run build && npm run security-check",
+		"prepack": "npm run build"
 	},
 	"files": [
 		"dist"
