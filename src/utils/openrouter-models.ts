@@ -287,8 +287,8 @@ export function formatModelForDisplay(model: OpenRouterModel): string {
 export function formatModelCostInfo(model: OpenRouterModel): string {
 	if (!model.pricing) return '';
 
-	const promptCost = parseFloat(model.pricing.prompt) * 1000; // Convert to per million
-	const completionCost = parseFloat(model.pricing.completion) * 1000; // Convert to per million
+	const promptCost = parseFloat(model.pricing.prompt) * 1000; // Convert from per 1K to per 1M
+	const completionCost = parseFloat(model.pricing.completion) * 1000; // Convert from per 1K to per 1M
 
 	// Format costs with appropriate precision for per million pricing
 	const formatCost = (cost: number): string => {
