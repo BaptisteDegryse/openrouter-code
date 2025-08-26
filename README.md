@@ -21,11 +21,6 @@
  <a href="#Development">Development</a>
 </p>
 
-<br>
-
-https://github.com/user-attachments/assets/5902fd07-1882-4ee7-825b-50d627f8c96a
-
-<br>
 
 # Overview
 
@@ -161,37 +156,44 @@ npm run dev        # Build in watch mode
 openrouter-code/
 ├── src/
 │   ├── commands/
-│   │   ├── definitions/        # Individual command implementations
-│   │   │   ├── clear.ts        # Clear chat history command
-│   │   │   ├── help.ts         # Help command
-│   │   │   ├── login.ts        # Authentication command
-│   │   │   ├── model.ts        # Model selection command
-│   │   │   └── reasoning.ts    # Reasoning toggle command
-│   │   ├── base.ts             # Base command interface
-│   │   └── index.ts            # Command exports
+│   │   ├── definitions/            # Individual command implementations
+│   │   │   ├── clear.ts            # Clear chat history command
+│   │   │   ├── help.ts             # Help command
+│   │   │   ├── login.ts            # Authentication command
+│   │   │   ├── model.ts            # Model selection (tools supported)
+│   │   │   ├── model-without-tools.ts # Model selection (no tools)
+│   │   │   └── reasoning.ts        # Reasoning toggle command
+│   │   ├── base.ts                 # Base command interface
+│   │   └── index.ts                # Command exports
 │   ├── core/
-│   │   ├── agent.ts            # AI agent implementation
-│   │   └── cli.ts              # CLI entry point and setup
+│   │   ├── agent.ts                # AI agent implementation
+│   │   └── cli.ts                  # CLI entry point and setup
 │   ├── tools/
-│   │   ├── tool-schemas.ts     # Tool schema definitions
-│   │   ├── tools.ts            # Tool implementations
-│   │   └── validators.ts       # Input validation utilities
+│   │   ├── tool-schemas.ts         # Tool schema definitions
+│   │   ├── tools.ts                # Tool implementations
+│   │   └── validators.ts           # Input validation utilities
 │   ├── ui/
-│   │   ├── App.tsx             # Main application component
+│   │   ├── App.tsx                 # Main application component
 │   │   ├── components/
-│   │   │   ├── core/           # Core chat TUI components
-│   │   │   ├── display/        # Auxiliary components for TUI display
-│   │   │   └── input-overlays/ # Input overlays and modals that occupy the MessageInput box
-│   │   └── hooks/
+│   │   │   ├── core/               # Core chat TUI components
+│   │   │   ├── display/            # Auxiliary components for TUI display
+│   │   │   └── input-overlays/     # Input overlays and modals
+│   │   └── hooks/                  # React hooks for state management
 │   └── utils/
-│       ├── constants.ts        # Application constants
-│       ├── file-ops.ts         # File system operations
-│       ├── local-settings.ts   # Local configuration management
-│       └── markdown.ts         # Markdown processing utilities
-├── docs/
-├── package.json
-├── tsconfig.json
-└── LICENSE
+│       ├── constants.ts            # Application constants
+│       ├── context-manager.ts      # Context window management
+│       ├── file-ops.ts             # File system operations
+│       ├── local-settings.ts       # Local configuration management
+│       ├── markdown.ts             # Markdown processing utilities
+│       └── openrouter-models.ts    # OpenRouter model utilities
+├── scripts/
+│   └── security-check.sh           # Security validation script
+├── docs/                           # Documentation and images
+├── .gitignore                      # Comprehensive git ignore rules
+├── .npmignore                      # npm publish exclusions
+├── package.json                    # Package configuration
+├── tsconfig.json                   # TypeScript configuration
+└── LICENSE                         # MIT license
 ```
 
 **TL;DR:** Start with `src/core/cli.ts` (main entry point), `src/core/agent.ts`, and `src/ui/hooks/useAgent.ts` (bridge between TUI and the agent). Tools are in `src/tools/`, slash commands are in `src/commands/definitions/`, and customize the TUI in `src/ui/components/`.
